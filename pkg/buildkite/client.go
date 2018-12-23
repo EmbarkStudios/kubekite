@@ -70,11 +70,19 @@ func watchBuildkiteJobs(ctx context.Context, wg *sync.WaitGroup, client *buildki
 			}
 		}
 
-		time.Sleep(15 * time.Second)
+		time.Sleep(5 * time.Second)
 
 	}
 }
 
 func jobInTargetQueue(job buildkite.Job, queue string) bool {
+	targetRule := fmt.Sprintf("queue=%s", queue)
+
+	for _, rule := range job.AgentQueryRules {
+		if rule == targetRule {
+			return true
+		}
+	}
+
 	return false
 }
