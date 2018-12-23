@@ -61,10 +61,10 @@ spec:
           - name: ssh-keys
             mountPath: /root/.ssh/id_rsa
             subPath: id_rsa
-          # - mountPath: /sockguard-socket
-          #   name: sockguard-sock
-          # - mountPath: /docker/docker.sock
-          #   name: docker-sock
+          - name: docker-binary
+            mountPath: /usr/bin/docker
+          - name: docker-socket
+            mountPath: /var/run/docker.sock
         resources:
           requests:
             cpu: 2
@@ -79,9 +79,9 @@ spec:
           secret:
             secretName: buildkite-agent-ssh
             defaultMode: 0400
-        # - name: sockguard-sock
-        #   emptyDir: {}
-        # - name: docker-sock
-        #   hostPath:
-        #     path: /var/run/docker.sock
-        #     type: Socket
+        - name: docker-binary
+          hostPath:
+            path: /usr/bin/docker
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
