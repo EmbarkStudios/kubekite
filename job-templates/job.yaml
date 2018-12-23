@@ -24,7 +24,7 @@ spec:
       #   - mountPath: /sockguard-socket
       #     name: sockguard-sock
       - name: buildkite-agent
-        image: sgringwe/buildkite-agent-gcloud:3.1.2
+        image: buildkite/agent:3.7.0
         args: ["start", "--disconnect-after-job", "--disconnect-after-job-timeout", "300"]
         imagePullPolicy: IfNotPresent
         securityContext:
