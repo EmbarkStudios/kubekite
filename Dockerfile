@@ -17,7 +17,8 @@ RUN dep ensure --vendor-only
 
 # Lastly, add the rest of the code and build the binary.
 COPY . ./
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app ./src/kubekite
+# RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app ./cmd/kubekite/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -a -installsuffix cgo -o kubekite .
 
 # Throw out the build step of the docker image and start fresh on Alpine Linux
 FROM golang:1.10
