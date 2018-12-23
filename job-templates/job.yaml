@@ -58,6 +58,9 @@ spec:
         volumeMounts:
           - mountPath: /scratch
             name: scratch
+          - name: ssh-keys
+            mountPath: /root/.ssh/id_rsa
+            subPath: id_rsa
           # - mountPath: /sockguard-socket
           #   name: sockguard-sock
           # - mountPath: /docker/docker.sock
@@ -72,6 +75,10 @@ spec:
       volumes:
         - name: scratch
           emptyDir: {}
+        - name: ssh-keys
+          secret:
+            secretName: buildkite-agent-ssh
+            defaultMode: 0400
         # - name: sockguard-sock
         #   emptyDir: {}
         # - name: docker-sock
