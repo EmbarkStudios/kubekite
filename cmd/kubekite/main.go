@@ -5,8 +5,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/webflow/kubekite/pkg/buildkite"
-	kube "github.com/webflow/kubekite/pkg/kubernetes"
+	"github.com/joinhandshake/kubekite/pkg/buildkite"
+	kube "github.com/joinhandshake/kubekite/pkg/kubernetes"
 
 	"github.com/namsral/flag"
 	"github.com/op/go-logging"
@@ -20,7 +20,7 @@ func main() {
 
 	var bkAPIToken string
 	var bkOrg string
-	var bkPipeline string
+	var bkQueue string
 
 	var kubeconfig string
 	var kubeNamespace string
@@ -39,7 +39,7 @@ func main() {
 
 	flag.StringVar(&bkAPIToken, "buildkite-api-token", "", "Buildkite API token")
 	flag.StringVar(&bkOrg, "buildkite-org", "", "Your buildkite organization")
-	flag.StringVar(&bkPipeline, "buildkite-pipeline", "", "Buildkite pipeline to watch for new jobs")
+	flag.StringVar(&bkQueue, "buildkite-queue", "", "Buildkite queue to watch for new jobs")
 
 	flag.StringVar(&kubeconfig, "kube-config", "", "Path to your kubeconfig file")
 	flag.StringVar(&kubeNamespace, "kube-namespace", "default", "Kubernetes namespace to run jobs in")
@@ -56,8 +56,8 @@ func main() {
 		log.Fatal("Error: must provide a Buildkite organization via -buildkite-org flag or BUILDKITE_ORG environment variable")
 	}
 
-	if bkPipeline == "" {
-		log.Fatal("Error: must provide a Buildkite pipeline via -buildkite-pipe flag or BUILDKITE_PIPELINE environment variable")
+	if bkQueue == "" {
+		log.Fatal("Error: must provide a Buildkite queue via -buildkite-queue flag or BUILDKITE_QUEUE environment variable")
 	}
 
 	if jobTemplateYaml == "" {
@@ -72,7 +72,7 @@ func main() {
 
 	wg := new(sync.WaitGroup)
 
-	j, err := kube.NewKubeJobManager(ctx, wg, jobTemplateYaml, kubeconfig, kubeNamespace, kubeTimeout, bkOrg, bkPipeline)
+	j, err := kube.NewKubeJobManager(ctx, wg, jobTemplateYaml, kubeconfig, kubeNamespace, kubeTimeout, bkOrg)
 	if err != nil {
 		log.Fatal("Error starting job manager:", err)
 	}
@@ -82,7 +82,7 @@ func main() {
 		log.Fatal("Error starting Buildkite API client:", err)
 	}
 
-	jobChan := buildkite.StartBuildkiteWatcher(ctx, wg, bkc, bkOrg, bkPipeline)
+	jobChan := buildkite.StartBuildkiteWatcher(ctx, wg, bkc, bkOrg, bkQueue)
 
 	go func(cancel context.CancelFunc) {
 		// If we get a SIGINT or SIGTERM, cancel the context and unblock 'done'
