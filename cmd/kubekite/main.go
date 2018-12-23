@@ -72,7 +72,7 @@ func main() {
 
 	wg := new(sync.WaitGroup)
 
-	j, err := kube.NewKubeJobManager(ctx, wg, jobTemplateYaml, kubeconfig, kubeNamespace, kubeTimeout, bkOrg, bkQueue)
+	j, err := kube.NewKubeJobManager(ctx, wg, jobTemplateYaml, kubeconfig, kubeNamespace, kubeTimeout, bkOrg)
 	if err != nil {
 		log.Fatal("Error starting job manager:", err)
 	}
