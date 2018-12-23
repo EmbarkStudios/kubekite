@@ -32,6 +32,6 @@ COPY job-templates/job.yaml /app/
 
 # Add the binary from our builder stage to the image and set the default CMD
 COPY --from=builder /workspace/src/github.com/joinhandshake/kubekite/kubekite /app/
-RUN chmod +x /app/buildkite
+RUN chmod +x /app/kubekite
 
 CMD ["/app/kubekite"]
