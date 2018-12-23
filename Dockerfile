@@ -21,7 +21,7 @@ COPY . ./
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -a -installsuffix cgo -o kubekite ./cmd/kubekite
 
 # Throw out the build step of the docker image and start fresh on Alpine Linux
-FROM golang:1.10
+FROM iron/base:latest
 
 # For our final image, we'll work out of /app directory. This
 # is more flexible, our standard directory for Handshake services
