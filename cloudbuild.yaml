@@ -1,11 +1,7 @@
 steps:
-# - name: 'gcr.io/cloud-builders/docker'
-#   args: ['pull', 'gcr.io/$PROJECT_ID/kubekite:latest']
 - name: 'gcr.io/cloud-builders/docker'
   args: [
             'build',
-            # '--cache-from',
-            # 'gcr.io/$PROJECT_ID/kubekite:latest',
             '-t', 'gcr.io/$PROJECT_ID/kubekite:latest',
             '-t', 'gcr.io/$PROJECT_ID/kubekite:$COMMIT_SHA',
             '.'

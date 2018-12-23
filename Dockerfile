@@ -28,8 +28,8 @@ FROM golang:1.10
 # is /app.
 WORKDIR /app/
 
-COPY job-templates/job.yaml /
+COPY job-templates/job.yaml /app/
 
 # Add the binary from our builder stage to the image and set the default CMD
-COPY --from=builder /app /app/
-CMD ["./app"]
+COPY --from=builder $GOPATH/src/github.com/joinhandshake/kubekite/kubekite /app/
+CMD ["./app/kubekite"]
