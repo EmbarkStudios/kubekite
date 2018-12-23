@@ -19,6 +19,8 @@ RUN dep ensure --vendor-only
 COPY . ./
 # RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app ./cmd/kubekite/main.go
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -a -installsuffix cgo -o kubekite ./cmd/kubekite
+RUN pwd
+RUN ls
 
 # Throw out the build step of the docker image and start fresh on Alpine Linux
 FROM golang:1.10
@@ -31,5 +33,5 @@ WORKDIR /app/
 COPY job-templates/job.yaml /app/
 
 # Add the binary from our builder stage to the image and set the default CMD
-COPY --from=builder $GOPATH/src/github.com/joinhandshake/kubekite/kubekite /app/
-CMD ["./app/kubekite"]
+COPY --from=builder $GOPATH/src/github.com/joinhandshake/kubekite /app/
+CMD ["./app"]
