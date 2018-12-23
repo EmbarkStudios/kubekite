@@ -22,18 +22,16 @@ type KubeJobManager struct {
 	JobsMutex   sync.RWMutex
 	namespace   string
 	org         string
-	pipeline    string
 }
 
 // NewKubeJobManager creates a new KubeJobManager object for managing jobs
-func NewKubeJobManager(ctx context.Context, wg *sync.WaitGroup, templateFilename string, kubeconfig string, kubeNamespace string, kubeTimeout int, org string, pipeline string) (*KubeJobManager, error) {
+func NewKubeJobManager(ctx context.Context, wg *sync.WaitGroup, templateFilename string, kubeconfig string, kubeNamespace string, kubeTimeout int, org string) (*KubeJobManager, error) {
 	var err error
 
 	k := new(KubeJobManager)
 
 	k.namespace = kubeNamespace
 	k.org = org
-	k.pipeline = pipeline
 
 	k.Jobs = make(map[string]*batchv1.Job)
 
@@ -80,7 +78,6 @@ func (k *KubeJobManager) LaunchJob(uuid string) error {
 	jobLabels := make(map[string]string)
 	jobLabels["kubekite-managed"] = "true"
 	jobLabels["kubekite-org"] = k.org
-	jobLabels["kubekite-pipeline"] = k.pipeline
 
 	t := k.jobTemplate
 
@@ -114,7 +111,7 @@ func (k *KubeJobManager) cleanCompletedJobs(ctx context.Context, wg *sync.WaitGr
 	wg.Add(1)
 	defer wg.Done()
 
-	selector := fmt.Sprintf("kubekite-managed=true,kubekite-org=%v,kubekite-pipeline=%v", k.org, k.pipeline)
+	selector := fmt.Sprintf("kubekite-managed=true,kubekite-org=%v", k.org)
 
 	for {
 

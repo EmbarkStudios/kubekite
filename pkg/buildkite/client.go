@@ -38,18 +38,18 @@ func NewBuildkiteClient(bkAPIToken string, debug bool) (*buildkite.Client, error
 
 }
 
-// StartBuildkiteWatcher starts a watcher that monitors a pipeline for new jobs
-func StartBuildkiteWatcher(ctx context.Context, wg *sync.WaitGroup, client *buildkite.Client, org string, pipeline string) chan string {
+// StartBuildkiteWatcher starts a watcher that monitors a queue for new jobs
+func StartBuildkiteWatcher(ctx context.Context, wg *sync.WaitGroup, client *buildkite.Client, org string, queue string) chan string {
 	c := make(chan string, 10)
 
-	go watchBuildkiteJobs(ctx, wg, client, org, pipeline, c)
+	go watchBuildkiteJobs(ctx, wg, client, org, queue, c)
 
 	log.Info("Buildkite job watcher started.")
 
 	return c
 }
 
-func watchBuildkiteJobs(ctx context.Context, wg *sync.WaitGroup, client *buildkite.Client, org string, pipeline string, jobChan chan<- string) {
+func watchBuildkiteJobs(ctx context.Context, wg *sync.WaitGroup, client *buildkite.Client, org string, queue string, jobChan chan<- string) {
 	wg.Add(1)
 	defer wg.Done()
 
@@ -57,14 +57,14 @@ func watchBuildkiteJobs(ctx context.Context, wg *sync.WaitGroup, client *buildki
 
 		log.Info("Checking Buildkite API for builds and jobs...")
 
-		builds, _, err := client.Builds.ListByPipeline(org, pipeline, &buildkite.BuildsListOptions{})
+		builds, _, err := client.Builds.ListByOrg(org, &buildkite.BuildsListOptions{})
 		if err != nil {
 			log.Error("Error fetching builds from Buildkite API:", err)
 		}
 
 		for _, build := range builds {
 			for _, job := range build.Jobs {
-				if job.State != nil && *job.State == "scheduled" {
+				if job.State != nil && *job.State == "scheduled" && jobInTargetQueue(*job, queue) {
 					jobChan <- *job.ID
 				}
 			}
@@ -73,4 +73,8 @@ func watchBuildkiteJobs(ctx context.Context, wg *sync.WaitGroup, client *buildki
 		time.Sleep(15 * time.Second)
 
 	}
+}
+
+func jobInTargetQueue(job buildkite.Job, queue string) bool {
+	return false
 }
