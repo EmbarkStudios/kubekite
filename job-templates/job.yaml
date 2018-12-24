@@ -74,8 +74,10 @@ spec:
             cpu: 4
             memory: 4Gi
       volumes:
+        # A locally mounted SSD that we have 1 of in certain node pools
         - name: scratch
-          emptyDir: {}
+          hostPath:
+            path: /mnt/disks/ssd0
         - name: ssh-keys
           secret:
             secretName: buildkite-agent-ssh
