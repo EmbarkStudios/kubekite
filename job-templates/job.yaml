@@ -14,19 +14,8 @@ spec:
       restartPolicy: OnFailure
       terminationGracePeriodSeconds: 1800
       containers:
-      # - name: sockguard
-      #   image: webflow/sockguard:1.0
-      #   args: ["-upstream-socket", "/docker/docker.sock", "-filename", "/sockguard-socket/sockguard.sock", "-allow-host-mode-networking", "true", "--allow-bind", "/var/buildkite"]
-      #   imagePullPolicy: Always
-      #   securityContext:
-      #     privileged: true
-      #   volumeMounts:
-      #   - mountPath: /docker/docker.sock
-      #     name: docker-sock
-      #   - mountPath: /sockguard-socket
-      #     name: sockguard-sock
       - name: buildkite-agent
-        image: webflow/buildkite-agent-kube:3.2.1
+        image: buildkite/agent:3.7.0
         args: ["start", "--disconnect-after-job", "--disconnect-after-job-timeout", "300"]
         imagePullPolicy: IfNotPresent
         securityContext:
@@ -38,7 +27,7 @@ spec:
           - name: TERM
             value: dumb
           - name: BUILDKITE_BUILD_PATH
-            value: /var/buildkite
+            value: /var/buildkite/builds
           - name: BUILDKITE_AGENT_TAGS
             value: "queue=kubekite"
           - name: BUILDKITE_AGENT_DEBUG
@@ -58,9 +47,8 @@ spec:
           #       name: aws-secrets
           #       key: AWS_SECRET_ACCESS_KEY
         volumeMounts:
-          # https://github.com/buildkite/agent/issues/729#issuecomment-381452958
-          - mountPath: /var/buildkite
-            name: scratch
+          - name: buildkite-builds
+            mountPath: /var/buildkite/builds
           - name: ssh-keys
             mountPath: /root/.ssh/id_rsa
             subPath: id_rsa
@@ -77,9 +65,9 @@ spec:
             memory: 4Gi
       volumes:
         # A locally mounted SSD that we have 1 of in certain node pools
-        - name: scratch
+        - name: buildkite-builds
           hostPath:
-            path: /mnt/disks/ssd0
+            path: /var/buildkite/builds
         - name: ssh-keys
           secret:
             secretName: buildkite-agent-ssh
