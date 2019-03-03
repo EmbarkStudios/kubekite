@@ -5,8 +5,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/joinhandshake/kubekite/pkg/buildkite"
-	kube "github.com/joinhandshake/kubekite/pkg/kubernetes"
+	"github.com/embarkstudios/kubekite/pkg/buildkite"
+	kube "github.com/embarkstudios/kubekite/pkg/kubernetes"
 
 	"github.com/namsral/flag"
 	"github.com/op/go-logging"

@@ -1,10 +1,10 @@
-FROM golang:1.10 as builder
+FROM golang:1.12 as builder
 
 # Cloud builder defaults to /workspace as workspace main directory. Additionally,
 # specify the WORKDIR to be the location of our application source code which 
 # should be inside of GOPATH using standard Golang directory patterns.
 ENV GOPATH=/workspace
-WORKDIR $GOPATH/src/github.com/joinhandshake/kubekite
+WORKDIR $GOPATH/src/github.com/embarkstudios/kubekite
 
 # Download and install the latest release of dep, which we use for vendoring our
 # dependencies.
@@ -31,7 +31,7 @@ WORKDIR /app/
 COPY job-templates/job.yaml /app/
 
 # Add the binary from our builder stage to the image and set the default CMD
-COPY --from=builder /workspace/src/github.com/joinhandshake/kubekite/kubekite /app/
+COPY --from=builder /workspace/src/github.com/embarkstudios/kubekite/kubekite /app/
 RUN chmod +x /app/kubekite
 
 CMD ["/app/kubekite"]

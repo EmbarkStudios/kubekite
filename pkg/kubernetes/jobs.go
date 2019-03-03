@@ -75,17 +75,15 @@ func (k *KubeJobManager) StartJobCleaner(ctx context.Context, wg *sync.WaitGroup
 func (k *KubeJobManager) LaunchJob(uuid string) error {
 	var err error
 
-	jobLabels := make(map[string]string)
-	jobLabels["kubekite-managed"] = "true"
-	jobLabels["kubekite-org"] = k.org
-
 	t := k.jobTemplate
 
 	// Set our labels on both the job and the pod that it generates
-	t.SetLabels(jobLabels)
-	t.Spec.Template.SetLabels(jobLabels)
+	t.Labels["kubekite-managed"] = "true"
+	t.Labels["kubekite-org"] = k.org
+	t.Spec.Template.Labels["kubekite-managed"] = "true"
+	t.Spec.Template.Labels["kubekite-org"] = k.org
 
-	t.Name = "buildkite-agent-" + uuid
+	t.Name = t.Name + "-" + uuid
 
 	runningJob, err := k.Client.BatchV1().Jobs(k.namespace).Get(t.Name, metav1.GetOptions{})
 	if err == nil {
