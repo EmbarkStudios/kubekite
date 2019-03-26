@@ -1,0 +1,6 @@
+- template: job-linux.yaml
+  filters:
+  - "os=linux"
+- template: job-windows.yaml
+  filters:
+  - "os=windows"

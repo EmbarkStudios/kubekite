@@ -39,8 +39,8 @@ func NewBuildkiteClient(bkAPIToken string, debug bool) (*buildkite.Client, error
 }
 
 // StartBuildkiteWatcher starts a watcher that monitors a queue for new jobs
-func StartBuildkiteWatcher(ctx context.Context, wg *sync.WaitGroup, client *buildkite.Client, org string, queue string) chan string {
-	c := make(chan string, 10)
+func StartBuildkiteWatcher(ctx context.Context, wg *sync.WaitGroup, client *buildkite.Client, org string, queue string) chan Job {
+	c := make(chan Job, 10)
 
 	go watchBuildkiteJobs(ctx, wg, client, org, queue, c)
 
@@ -49,7 +49,13 @@ func StartBuildkiteWatcher(ctx context.Context, wg *sync.WaitGroup, client *buil
 	return c
 }
 
-func watchBuildkiteJobs(ctx context.Context, wg *sync.WaitGroup, client *buildkite.Client, org string, queue string, jobChan chan<- string) {
+// Job is a trimmed down buildkite job
+type Job struct {
+	ID   string
+	Tags []string
+}
+
+func watchBuildkiteJobs(ctx context.Context, wg *sync.WaitGroup, client *buildkite.Client, org string, queue string, jobChan chan<- Job) {
 	wg.Add(1)
 	defer wg.Done()
 
@@ -65,7 +71,10 @@ func watchBuildkiteJobs(ctx context.Context, wg *sync.WaitGroup, client *buildki
 		for _, build := range builds {
 			for _, job := range build.Jobs {
 				if job.State != nil && *job.State == "scheduled" && jobInTargetQueue(*job, queue) {
-					jobChan <- *job.ID
+					jobChan <- Job{
+						ID:   *job.ID,
+						Tags: job.AgentQueryRules,
+					}
 				}
 			}
 		}

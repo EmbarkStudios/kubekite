@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: buildkite-agent-windows
+  namespace: buildkite
+spec:
+  template:
+    metadata:
+      labels:
+        application: buildkite-agent
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-local-ssd: "true"
+      restartPolicy: OnFailure
+      terminationGracePeriodSeconds: 1800
+      containers:
+      - name: buildkite-agent
+        image: # TODO: Use Windows image buildkite/agent:3.7.0
+        args: ["start", "--disconnect-after-job", "--disconnect-after-job-timeout", "300"]
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true
+        envFrom:
+          - secretRef:
+              name: buildkite-secrets
+        env:
+          - name: TERM
+            value: dumb
+          - name: BUILDKITE_BUILD_PATH
+            value: /var/buildkite/builds
+          - name: BUILDKITE_AGENT_TAGS
+            value: "queue=kubekite,os=windows"
+          - name: BUILDKITE_AGENT_DEBUG
+            value: "true"
+          - name: BUILDKITE_GIT_CLEAN_FLAGS
+            value: "-fdqx"
+        # TODO: Mount Windows things to Windows places
+        # volumeMounts:
+        #   - name: buildkite-builds
+        #     mountPath: /var/buildkite/builds
+        #   - name: ssh-keys
+        #     mountPath: /root/.ssh/id_rsa
+        #     subPath: id_rsa
+        #   - name: docker-binary
+        #     mountPath: /usr/bin/docker
+        #   - name: docker-socket
+        #     mountPath: /var/run/docker.sock
+        resources:
+          requests:
+            cpu: 2
+            memory: 1Gi
+          limits:
+            cpu: 4
+            memory: 4Gi
+      # volumes:
+      #   # A locally mounted SSD that we have 1 of in certain node pools
+      #   - name: buildkite-builds
+      #     hostPath:
+      #       path: /var/buildkite/builds
+      #   - name: ssh-keys
+      #     secret:
+      #       secretName: buildkite-agent-ssh
+      #       defaultMode: 0400
+      #   - name: docker-binary
+      #     hostPath:
+      #       path: /usr/bin/docker
+      #   - name: docker-socket
+      #     hostPath:
+      #       path: /var/run/docker.sock

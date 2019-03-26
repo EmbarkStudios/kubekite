@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
+	"sort"
 	"sync"
 
 	"github.com/embarkstudios/kubekite/pkg/buildkite"
@@ -10,7 +12,18 @@ import (
 
 	"github.com/namsral/flag"
 	"github.com/op/go-logging"
+	"gopkg.in/yaml.v2"
 )
+
+type JobTemplateTags struct {
+	template string
+	filters  []string
+}
+
+type JobTemplateMapping struct {
+	jobManager kube.KubeJobManager
+	filters    []string
+}
 
 var log = logging.MustGetLogger("kubekite")
 
@@ -25,6 +38,7 @@ func main() {
 	var kubeconfig string
 	var kubeNamespace string
 	var jobTemplateYaml string
+	var jobMappingYaml string
 	var kubeTimeout int
 
 	var format = logging.MustStringFormatter(
@@ -43,10 +57,13 @@ func main() {
 
 	flag.StringVar(&kubeconfig, "kube-config", "", "Path to your kubeconfig file")
 	flag.StringVar(&kubeNamespace, "kube-namespace", "default", "Kubernetes namespace to run jobs in")
-	flag.StringVar(&jobTemplateYaml, "job-template", "job.yaml", "Path to your job template YAML file")
+	flag.StringVar(&jobTemplateYaml, "job-template", "job-linux.yaml", "Path to your job template YAML file")
+	flag.StringVar(&jobMappingYaml, "job-mapping", "", "Path to your job mapping YAML file")
 	flag.IntVar(&kubeTimeout, "kube-timeout", 15, "Timeout (in seconds) for Kubernetes API requests. Set to 0 for no timeout.  Default: 15")
 
 	flag.Parse()
+
+	var mappings []JobTemplateTags
 
 	if bkAPIToken == "" {
 		log.Fatal("Error: must provide API token via -api-token flag or BUILDKITE_API_TOKEN environment variable")
@@ -61,7 +78,26 @@ func main() {
 	}
 
 	if jobTemplateYaml == "" {
-		log.Fatal("Error: must provide a Kuberenetes job template filename via -job-template flag or JOB_TEMPLATE environment variable")
+		if jobMappingYaml != "" {
+			yml, err := ioutil.ReadFile(jobMappingYaml)
+
+			if err != nil {
+				log.Fatal("Error: Failed to read job mapping yaml", err)
+			}
+
+			err = yaml.Unmarshal(yml, &mappings)
+
+			if err != nil {
+				log.Fatal("Error: Failed to parse job mapping yaml", err)
+			}
+		} else {
+			log.Fatal("Error: must provide a Kuberenetes job template filename via -job-template flag or JOB_TEMPLATE environment variable")
+		}
+	} else {
+		mappings = append(mappings, JobTemplateTags{
+			template: jobTemplateYaml,
+			filters:  make([]string, 0),
+		})
 	}
 
 	sigs := make(chan os.Signal, 1)
@@ -72,9 +108,21 @@ func main() {
 
 	wg := new(sync.WaitGroup)
 
-	j, err := kube.NewKubeJobManager(ctx, wg, jobTemplateYaml, kubeconfig, kubeNamespace, kubeTimeout, bkOrg)
-	if err != nil {
-		log.Fatal("Error starting job manager:", err)
+	jobManagers := make([]JobTemplateMapping, len(mappings))
+
+	for i := 0; i < len(mappings); i++ {
+		jobManager, err := kube.NewKubeJobManager(ctx, wg, mappings[i].template, kubeconfig, kubeNamespace, kubeTimeout, bkOrg)
+		if err != nil {
+			log.Fatal("Error starting job manager:", err)
+		}
+
+		filters := mappings[i].filters
+		sort.Strings(filters)
+
+		jobManagers[i] = JobTemplateMapping{
+			filters:    filters,
+			jobManager: *jobManager,
+		}
 	}
 
 	bkc, err := buildkite.NewBuildkiteClient(bkAPIToken, debug)
@@ -95,9 +143,39 @@ func main() {
 	for {
 		select {
 		case job := <-jobChan:
-			err := j.LaunchJob(job)
-			if err != nil {
-				log.Error("Error launching job:", err)
+			// Preserves the previous behavior of just specifying one possible job template
+			if len(jobManagers) == 1 {
+				err := jobManagers[0].jobManager.LaunchJob(job.ID)
+				if err != nil {
+					log.Error("Error launching job:", err)
+				}
+			} else {
+				highestScore := -1
+				index := -1
+
+				// Just do exact matching for now
+				for i := 0; i < len(jobManagers); i++ {
+					score := 0
+					for _, filter := range job.Tags {
+						ind := sort.SearchStrings(jobManagers[i].filters, filter)
+
+						if ind < len(jobManagers[i].filters) {
+							score++
+						}
+					}
+
+					if score > highestScore {
+						highestScore = score
+						index = i
+					}
+				}
+
+				if index >= 0 && index < len(jobManagers) {
+					err := jobManagers[index].jobManager.LaunchJob(job.ID)
+					if err != nil {
+						log.Error("Error launching job:", err)
+					}
+				}
 			}
 		case <-ctx.Done():
 			log.Notice("Cancellation request recieved. Cancelling job processor.")

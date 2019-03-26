@@ -28,10 +28,11 @@ FROM iron/base:latest
 # is /app.
 WORKDIR /app/
 
-COPY job-templates/job.yaml /app/
+COPY job-templates/ /app/
 
 # Add the binary from our builder stage to the image and set the default CMD
 COPY --from=builder /workspace/src/github.com/embarkstudios/kubekite/kubekite /app/
 RUN chmod +x /app/kubekite
 
-CMD ["/app/kubekite"]
+#CMD ["/app/kubekite", "--job-mapping", "job-mapping.yaml"] # TODO: Use this when we support windows
+CMD ["/app/kubekite", "--job-template", "job-linux.yaml"]

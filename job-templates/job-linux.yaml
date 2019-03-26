@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: buildkite-agent
+  name: buildkite-agent-linux
   namespace: buildkite
 spec:
   template:
@@ -29,23 +29,11 @@ spec:
           - name: BUILDKITE_BUILD_PATH
             value: /var/buildkite/builds
           - name: BUILDKITE_AGENT_TAGS
-            value: "queue=kubekite"
+            value: "queue=kubekite,os=linux"
           - name: BUILDKITE_AGENT_DEBUG
             value: "true"
           - name: BUILDKITE_GIT_CLEAN_FLAGS
             value: "-fdqx"
-          # - name: BUILDKITE_PLUGIN_S3_SECRETS_BUCKET
-          #   value: "your-secrets-bucket"
-          # - name: AWS_ACCESS_KEY_ID
-          #   valueFrom:
-          #     secretKeyRef:
-          #       name: aws-secrets
-          #       key: AWS_ACCESS_KEY_ID
-          # - name: AWS_SECRET_ACCESS_KEY
-          #   valueFrom:
-          #     secretKeyRef:
-          #       name: aws-secrets
-          #       key: AWS_SECRET_ACCESS_KEY
         volumeMounts:
           - name: buildkite-builds
             mountPath: /var/buildkite/builds
